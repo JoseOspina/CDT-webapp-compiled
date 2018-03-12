@@ -111,7 +111,20 @@ public class OrganizationService extends BaseService {
 		for (AxisDto axisDto : pollDto.getAxes()) {
 			
 			Axis axis = null;
+			
+			boolean axisIsCustom = false;
+			
 			if (axisDto.getCustom()) {
+				axisIsCustom = true;
+			}
+			
+			for (QuestionDto questionDto : axisDto.getQuestions()) {
+				if (questionDto.getCustom()) {
+					axisIsCustom = true;
+				}
+			}
+						
+			if (axisIsCustom) {
 				axis = new Axis();
 				
 				axis.setTitle(axisDto.getTitle());
