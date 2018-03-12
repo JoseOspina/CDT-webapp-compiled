@@ -17,7 +17,7 @@ public interface PollRepositoryIf extends CrudRepository<Poll, UUID> {
 	@Query("SELECT COUNT(po) FROM Poll po WHERE (po.isTemplate = TRUE AND po.organization.id = ?1) OR po.isPublicTemplate = TRUE")
 	public Integer countNTemplatesInternal(UUID orgId);
 	
-	@Query("SELECT po FROM Poll po WHERE po.organization.id = ?1 AND po.status != ?2")
+	@Query("SELECT po FROM Poll po WHERE po.organization.id = ?1 AND po.status != ?2 ORDER BY po.creationDate DESC")
 	public List<Poll> findByOrganization_IdAndNotInStatus(UUID orgId, PollStatus status);
 	
 	public List<Poll> findByOrganization_Id(UUID orgId);

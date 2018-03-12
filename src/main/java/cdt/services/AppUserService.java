@@ -54,7 +54,7 @@ public class AppUserService extends BaseService {
 	public GetResult<AppUserDto> getUser(UUID id) {
 		AppUserDto userDto = getFromId(id).toDto();
 		
-		List<Organization> orgs = organizationRepository.findByAdmins_Id(id);
+		List<Organization> orgs = organizationRepository.findByAdmins_IdOrderByCreationDateDesc(id);
 		
 		for (Organization org : orgs) {
 			userDto.getOrganizations().add(org.toDto());

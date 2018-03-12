@@ -12,7 +12,7 @@ public interface OrganizationRepositoryIf extends CrudRepository<Organization, U
 	
 	public Organization findById(UUID id);
 	
-	public List<Organization> findByAdmins_Id(UUID id);
+	public List<Organization> findByAdmins_IdOrderByCreationDateDesc(UUID id);
 	
 	public Organization findByIdAndAdmins_Id(UUID orgId, UUID adminId);
 	
