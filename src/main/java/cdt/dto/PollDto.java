@@ -6,6 +6,7 @@ import java.util.List;
 public class PollDto {
 	
 	String id;
+	String templateId;
 	String title;
 	String description;
 	Boolean isTemplate;
@@ -15,17 +16,23 @@ public class PollDto {
 	List<AxisDto> axes = new ArrayList<AxisDto>();
 	PollConfigDto config;
 	
-	public String getTitle() {
-		return title;
-	}
-	public void setTitle(String title) {
-		this.title = title;
-	}
 	public String getId() {
 		return id;
 	}
 	public void setId(String id) {
 		this.id = id;
+	}
+	public String getTemplateId() {
+		return templateId;
+	}
+	public void setTemplateId(String templateId) {
+		this.templateId = templateId;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public void setTitle(String title) {
+		this.title = title;
 	}
 	public String getDescription() {
 		return description;

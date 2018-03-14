@@ -107,7 +107,13 @@ public class OrganizationService extends BaseService {
 		
 		config = pollConfigRepository.save(config);
 		
-		
+		Poll template = null;
+		if (pollDto.getTemplateId() != null) {
+			if (pollDto.getTemplateId() != "") {
+				template = pollRepository.findById(UUID.fromString(pollDto.getTemplateId()));
+			}
+		}
+				
 		for (AxisDto axisDto : pollDto.getAxes()) {
 			
 			Axis axis = null;
@@ -118,9 +124,28 @@ public class OrganizationService extends BaseService {
 				axisIsCustom = true;
 			}
 			
-			for (QuestionDto questionDto : axisDto.getQuestions()) {
+			for (int ix=0; ix < axisDto.getQuestions().size(); ix++) {
+				QuestionDto questionDto = axisDto.getQuestions().get(ix);
+				
 				if (questionDto.getCustom()) {
 					axisIsCustom = true;
+				}
+				
+				/* check order of questions and existence */
+				if (template != null) {
+					Axis templateAxis = null;
+					
+					for (Axis templateAxisTemp : template.getAxes()) {
+						if (templateAxisTemp.getId().toString().equals(axisDto.getId())) {
+							templateAxis = templateAxisTemp;
+							break;
+						}
+					}
+					
+					Question templateQuestion = templateAxis.getQuestionsAndWeights().get(ix).getQuestion();
+					if (!questionDto.getId().equals(templateQuestion.getId().toString())) {
+						axisIsCustom = true;
+					}	
 				}
 			}
 						
