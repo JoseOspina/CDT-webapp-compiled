@@ -14,6 +14,8 @@ import javax.persistence.Table;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
+import cdt.dto.PollConfigDto;
+
 @Entity
 @Table(name="polls_config")
 public class PollConfig {
@@ -30,6 +32,15 @@ public class PollConfig {
 	
 	@Enumerated(EnumType.STRING)
 	private PollAudience audience;
+	
+	private Boolean notificationsSent;
+	
+	public PollConfigDto toDto() {
+		PollConfigDto dto = new PollConfigDto();
+		dto.setAudience(audience.toString());
+		
+		return dto;
+	}
 	
 	public UUID getId() {
 		return id;
@@ -53,6 +64,14 @@ public class PollConfig {
 
 	public void setAudience(PollAudience audience) {
 		this.audience = audience;
+	}
+
+	public Boolean getNotificationsSent() {
+		return notificationsSent;
+	}
+
+	public void setNotificationsSent(Boolean notificationsSent) {
+		this.notificationsSent = notificationsSent;
 	}
 	
 }

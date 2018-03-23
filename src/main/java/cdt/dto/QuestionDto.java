@@ -6,7 +6,6 @@ public class QuestionDto {
 	String text;
 	String type;
 	double weight;
-	Boolean custom;
 	
 	public String getId() {
 		return id;
@@ -31,12 +30,6 @@ public class QuestionDto {
 	}
 	public void setWeight(double weight) {
 		this.weight = weight;
-	}
-	public Boolean getCustom() {
-		return custom;
-	}
-	public void setCustom(Boolean custom) {
-		this.custom = custom;
 	}
 	
 }

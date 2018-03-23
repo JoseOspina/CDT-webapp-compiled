@@ -1,7 +1,5 @@
 package cdt.entities;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -9,19 +7,14 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
-/**
- * @author pepo
- *
- */
 @Entity
-@Table(name="answer_batches")
-public class AnswerBatch {
+@Table(name="poll_credentials")
+public class PollCredential {
 
 	@Id
 	@GeneratedValue(generator = "UUID")
@@ -33,13 +26,12 @@ public class AnswerBatch {
 	@ManyToOne
 	private Poll poll;
 	
+	@ManyToOne
+	private Member member;
+	
 	private String secret;
 	
-	@ManyToOne
-	private AppUser answeredBy;
-	
-	@OneToMany(mappedBy = "batch")
-	private List<Answer> answers = new ArrayList<Answer>();
+	private Boolean used;
 	
 
 	public UUID getId() {
@@ -57,7 +49,15 @@ public class AnswerBatch {
 	public void setPoll(Poll poll) {
 		this.poll = poll;
 	}
-	
+
+	public Member getMember() {
+		return member;
+	}
+
+	public void setMember(Member member) {
+		this.member = member;
+	}
+
 	public String getSecret() {
 		return secret;
 	}
@@ -66,20 +66,12 @@ public class AnswerBatch {
 		this.secret = secret;
 	}
 
-	public AppUser getAnsweredBy() {
-		return answeredBy;
+	public Boolean getUsed() {
+		return used;
 	}
 
-	public void setAnsweredBy(AppUser answeredBy) {
-		this.answeredBy = answeredBy;
-	}
-
-	public List<Answer> getAnswers() {
-		return answers;
-	}
-
-	public void setAnswers(List<Answer> answers) {
-		this.answers = answers;
+	public void setUsed(Boolean used) {
+		this.used = used;
 	}
 	
 }

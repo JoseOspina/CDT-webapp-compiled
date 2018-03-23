@@ -5,22 +5,14 @@ import java.util.List;
 
 public class AxisResultDto {
 	
-	public String axisId;
-	public String axisTitle;
-	
+	public AxisDto axis;
 	public List<QuestionResultDto> questionResults = new ArrayList<QuestionResultDto>();
 	
-	public String getAxisId() {
-		return axisId;
+	public AxisDto getAxis() {
+		return axis;
 	}
-	public void setAxisId(String axisId) {
-		this.axisId = axisId;
-	}
-	public String getAxisTitle() {
-		return axisTitle;
-	}
-	public void setAxisTitle(String axisTitle) {
-		this.axisTitle = axisTitle;
+	public void setAxis(AxisDto axis) {
+		this.axis = axis;
 	}
 	public List<QuestionResultDto> getQuestionResults() {
 		return questionResults;

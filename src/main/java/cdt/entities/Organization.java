@@ -7,11 +7,14 @@ import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
@@ -33,6 +36,9 @@ public class Organization {
 	
 	private String name;
 	
+	@Enumerated(EnumType.STRING)
+	private OrganizationStatus status;
+	
 	@Lob
 	@Type(type = "org.hibernate.type.TextType")
 	private String description;
@@ -42,6 +48,9 @@ public class Organization {
 	
 	@ManyToMany
 	private List<AppUser> admins = new ArrayList<AppUser>();
+	
+	@OneToMany(mappedBy = "organization")
+	private List<Member> members = new ArrayList<Member>();
 	
 	@Column(name = "creation_date")
 	private Timestamp creationDate;
@@ -73,6 +82,14 @@ public class Organization {
 		this.name = name;
 	}
 	
+	public OrganizationStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(OrganizationStatus status) {
+		this.status = status;
+	}
+
 	public String getDescription() {
 		return description;
 	}
@@ -104,5 +121,14 @@ public class Organization {
 	public void setCreationDate(Timestamp creationDate) {
 		this.creationDate = creationDate;
 	}
+
+	public List<Member> getMembers() {
+		return members;
+	}
+
+	public void setMembers(List<Member> members) {
+		this.members = members;
+	}
+	
 	
 }

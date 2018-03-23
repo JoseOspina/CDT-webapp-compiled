@@ -12,9 +12,11 @@ import javax.persistence.Table;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
+import cdt.dto.MemberDto;
+
 @Entity
-@Table(name="question_and_weights")
-public class QuestionAndWeight {
+@Table(name="members")
+public class Member {
 
 	@Id
 	@GeneratedValue(generator = "UUID")
@@ -24,9 +26,17 @@ public class QuestionAndWeight {
 	private UUID id;
 	
 	@ManyToOne
-	private Question question;
+	private Organization organization;
 	
-	private double weight;
+	private String email;
+	
+	public MemberDto toDto() {
+		MemberDto dto = new MemberDto();
+		dto.setId(id.toString());
+		dto.setOrganizationId(organization.getId().toString());
+		dto.setEmail(email);
+		return dto;
+	}
 
 	public UUID getId() {
 		return id;
@@ -36,20 +46,20 @@ public class QuestionAndWeight {
 		this.id = id;
 	}
 
-	public Question getQuestion() {
-		return question;
+	public Organization getOrganization() {
+		return organization;
 	}
 
-	public void setQuestion(Question question) {
-		this.question = question;
+	public void setOrganization(Organization organization) {
+		this.organization = organization;
 	}
 
-	public double getWeight() {
-		return weight;
+	public String getEmail() {
+		return email;
 	}
 
-	public void setWeight(double weight) {
-		this.weight = weight;
+	public void setEmail(String email) {
+		this.email = email;
 	}
-		
+	
 }

@@ -8,9 +8,10 @@ public class AxisDto {
 	String id;
 	String title;
 	String description;
+	private Boolean includeInPlot;
+	
 	List<QuestionDto> questions = new ArrayList<QuestionDto>();
-	Boolean custom;
-
+	
 	public String getTitle() {
 		return title;
 	}
@@ -29,17 +30,17 @@ public class AxisDto {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	public Boolean getIncludeInPlot() {
+		return includeInPlot;
+	}
+	public void setIncludeInPlot(Boolean includeInPlot) {
+		this.includeInPlot = includeInPlot;
+	}
 	public List<QuestionDto> getQuestions() {
 		return questions;
 	}
 	public void setQuestions(List<QuestionDto> questions) {
 		this.questions = questions;
-	}
-	public Boolean getCustom() {
-		return custom;
-	}
-	public void setCustom(Boolean custom) {
-		this.custom = custom;
 	}
 	
 }

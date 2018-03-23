@@ -6,10 +6,11 @@ import cdt.repositories.AnswerBatchRepositoryIf;
 import cdt.repositories.AnswerRepositoryIf;
 import cdt.repositories.AppUserRepositoryIf;
 import cdt.repositories.AxisRepositoryIf;
+import cdt.repositories.MemberRepositoryIf;
 import cdt.repositories.OrganizationRepositoryIf;
 import cdt.repositories.PollConfigRepositoryIf;
+import cdt.repositories.PollCredentialRepositoryIf;
 import cdt.repositories.PollRepositoryIf;
-import cdt.repositories.QuestionAndWeightRepositoryIf;
 import cdt.repositories.QuestionRepositoryIf;
 
 public class BaseService {
@@ -33,12 +34,18 @@ public class BaseService {
 	protected QuestionRepositoryIf questionRepository;
 	
 	@Autowired
-	protected QuestionAndWeightRepositoryIf questionAndWeightRepository;
-	
-	@Autowired
 	protected AnswerRepositoryIf answerRepository;
 	
 	@Autowired
 	protected AnswerBatchRepositoryIf answerBatchRepository;
+	
+	@Autowired
+	protected MemberRepositoryIf memberRepository;
+	
+	@Autowired
+	protected PollCredentialRepositoryIf pollCredentialRepository;
+	
+	
+	
 
 }

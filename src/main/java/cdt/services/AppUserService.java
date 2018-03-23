@@ -19,6 +19,7 @@ import cdt.dto.GetResult;
 import cdt.dto.PostResult;
 import cdt.entities.AppUser;
 import cdt.entities.Organization;
+import cdt.entities.OrganizationStatus;
 
 @Service
 public class AppUserService extends BaseService {
@@ -54,7 +55,7 @@ public class AppUserService extends BaseService {
 	public GetResult<AppUserDto> getUser(UUID id) {
 		AppUserDto userDto = getFromId(id).toDto();
 		
-		List<Organization> orgs = organizationRepository.findByAdmins_IdOrderByCreationDateDesc(id);
+		List<Organization> orgs = organizationRepository.findByAdminNotWithStatus(id, OrganizationStatus.DELETED);
 		
 		for (Organization org : orgs) {
 			userDto.getOrganizations().add(org.toDto());

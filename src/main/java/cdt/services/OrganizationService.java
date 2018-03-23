@@ -7,12 +7,15 @@ import java.util.UUID;
 
 import javax.transaction.Transactional;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.stereotype.Service;
 
 import cdt.dto.AnswerDto;
+import cdt.dto.AppUserDto;
 import cdt.dto.AxisDto;
 import cdt.dto.AxisResultDto;
 import cdt.dto.GetResult;
+import cdt.dto.MemberDto;
 import cdt.dto.OrganizationDto;
 import cdt.dto.PollDetailsDto;
 import cdt.dto.PollDto;
@@ -23,15 +26,16 @@ import cdt.entities.Answer;
 import cdt.entities.AnswerBatch;
 import cdt.entities.AppUser;
 import cdt.entities.Axis;
+import cdt.entities.Member;
 import cdt.entities.Organization;
+import cdt.entities.OrganizationStatus;
 import cdt.entities.Poll;
 import cdt.entities.PollAudience;
 import cdt.entities.PollConfig;
+import cdt.entities.PollCredential;
 import cdt.entities.PollStatus;
 import cdt.entities.Question;
-import cdt.entities.QuestionAndWeight;
 import cdt.entities.QuestionType;
-import cdt.entities.ResponderType;
 
 @Service
 public class OrganizationService extends BaseService {
@@ -48,10 +52,20 @@ public class OrganizationService extends BaseService {
 		organization.setCreator(creator);
 		organization.getAdmins().add(creator);
 		organization.setCreationDate(new Timestamp(System.currentTimeMillis()));
+		organization.setStatus(OrganizationStatus.OPEN);
 		
 		organization = organizationRepository.save(organization);
 		
 		return new PostResult("success", "organization created", organization.getId().toString());
+	}
+	
+	@Transactional
+	public PostResult delete(UUID orgId) {
+		Organization organization = organizationRepository.findById(orgId);
+		organization.setStatus(OrganizationStatus.DELETED);
+		organization = organizationRepository.save(organization);
+		
+		return new PostResult("success", "organization deleted", organization.getId().toString());
 	}
 	
 	@Transactional
@@ -76,8 +90,8 @@ public class OrganizationService extends BaseService {
 	}
 	
 	@Transactional
-	public GetResult<List<PollDto>> getTemplates(UUID orgId) {
-		List<Poll> templates = pollRepository.getTemplates(orgId);
+	public GetResult<List<PollDto>> getTemplates(UUID orgId, Boolean searchPublic) {
+		List<Poll> templates = pollRepository.getTemplates(orgId, searchPublic);
 		List<PollDto> templateDtos = new ArrayList<PollDto>();
 		
 		for (Poll template : templates) {
@@ -103,91 +117,131 @@ public class OrganizationService extends BaseService {
 		
 		PollConfig config = new PollConfig();
 		config.setAudience(PollAudience.valueOf(pollDto.getConfig().getAudience()));
+		config.setNotificationsSent(false);
+		
 		config.setPoll(poll);
 		
-		config = pollConfigRepository.save(config);
-		
-		Poll template = null;
-		if (pollDto.getTemplateId() != null) {
-			if (pollDto.getTemplateId() != "") {
-				template = pollRepository.findById(UUID.fromString(pollDto.getTemplateId()));
-			}
-		}
+		if (config.getAudience() == PollAudience.ANY_MEMBER) {
+			/* prepare credentials */
+			for (Member member : poll.getOrganization().getMembers()) {
+				PollCredential credential = new PollCredential();
+				credential.setPoll(poll);
+				credential.setMember(member);
+				credential.setSecret(RandomStringUtils.randomAlphabetic(32));
+				credential.setUsed(false);
 				
+				credential = pollCredentialRepository.save(credential);
+				
+				poll.getCredentials().add(credential);
+			}
+		}	
+		
+		config = pollConfigRepository.save(config);
+	
 		for (AxisDto axisDto : pollDto.getAxes()) {
 			
+			Axis axis = new Axis();
+			
+			axis.setTitle(axisDto.getTitle());
+			axis.setDescription(axisDto.getDescription());
+			axis.setIncludeInPlot(axisDto.getIncludeInPlot());
+			axis = axisRepository.save(axis);
+			
+			for (QuestionDto questionDto : axisDto.getQuestions()) {
+				Question question = new Question();
+				
+				question.setText(questionDto.getText());
+				question.setType(QuestionType.valueOf(questionDto.getType()));
+				question.setWeight(questionDto.getWeight());
+				question = questionRepository.save(question);
+				
+				axis.getQuestions().add(question);
+			}
+			
+			poll.getAxes().add(axis);
+		}
+
+		return new PostResult("success", "poll created", poll.getId().toString());
+	}
+	
+	@Transactional
+	public PostResult editPoll(UUID pollId, PollDto pollDto) {
+		
+		Poll poll = pollRepository.findById(pollId);
+		if (poll == null) {
+			return new PostResult("error", "poll not found", null);
+		}
+		
+		poll.setTitle(pollDto.getTitle());
+		poll.setDescription(pollDto.getDescription());
+		poll = pollRepository.save(poll);
+		
+		List<Axis> newAxes = new ArrayList<Axis>();
+		
+		for (AxisDto axisDto : pollDto.getAxes()) {
+			
+			/* check if axis is new or existing */
+			UUID axisId = null;
+			try { axisId = UUID.fromString(axisDto.getId()); } catch (Exception ex) {}
+			
 			Axis axis = null;
-			
-			boolean axisIsCustom = false;
-			
-			if (axisDto.getCustom()) {
-				axisIsCustom = true;
-			}
-			
-			for (int ix=0; ix < axisDto.getQuestions().size(); ix++) {
-				QuestionDto questionDto = axisDto.getQuestions().get(ix);
-				
-				if (questionDto.getCustom()) {
-					axisIsCustom = true;
-				}
-				
-				/* check order of questions and existence */
-				if (template != null) {
-					Axis templateAxis = null;
-					
-					for (Axis templateAxisTemp : template.getAxes()) {
-						if (templateAxisTemp.getId().toString().equals(axisDto.getId())) {
-							templateAxis = templateAxisTemp;
-							break;
-						}
+			/* check if this axis was already in the poll */
+			if (axisId != null) { 
+				for (Axis axisTemp : poll.getAxes()) {
+					if (axisTemp.getId().equals(axisId)) {
+						axis = axisTemp;
 					}
-					
-					Question templateQuestion = templateAxis.getQuestionsAndWeights().get(ix).getQuestion();
-					if (!questionDto.getId().equals(templateQuestion.getId().toString())) {
-						axisIsCustom = true;
-					}	
 				}
 			}
-						
-			if (axisIsCustom) {
+			
+			if (axis == null) {
 				axis = new Axis();
-				
-				axis.setTitle(axisDto.getTitle());
-				axis.setDescription(axisDto.getDescription());
-				axis = axisRepository.save(axis);
-				
-				for (QuestionDto questionDto : axisDto.getQuestions()) {
-					Question question = null;
-					
-					if (questionDto.getCustom()) {
-						question = new Question();
-						
-					} else {
-						question = questionRepository.findById(UUID.fromString(questionDto.getId()));
-						if (question == null) {
-							return new PostResult("error", "non-custom question not found", null);
-						}
-					}
-					
-					question.setText(questionDto.getText());
-					question.setType(QuestionType.valueOf(questionDto.getType()));
-					question = questionRepository.save(question);
-					
-					QuestionAndWeight questionAndWeight = new QuestionAndWeight();
-					
-					questionAndWeight.setQuestion(question);
-					questionAndWeight.setWeight(questionDto.getWeight());
-					questionAndWeight = questionAndWeightRepository.save(questionAndWeight);
-					
-					axis.getQuestionsAndWeights().add(questionAndWeight);
-				}
-			} else {
-				axis = axisRepository.findById(UUID.fromString(axisDto.getId()));
-				if (axis == null) {
-					return new PostResult("error", "non-custom axis not found", null);
-				}
 			}
 			
+			axis.setTitle(axisDto.getTitle());
+			axis.setDescription(axisDto.getDescription());
+			axis.setIncludeInPlot(axisDto.getIncludeInPlot());
+			axis = axisRepository.save(axis);
+			
+			List<Question> newQuestions = new ArrayList<Question>();
+			
+			for (QuestionDto questionDto : axisDto.getQuestions()) {
+				
+				/* check if question is new or existing */
+				UUID questionId = null;
+				try { questionId = UUID.fromString(questionDto.getId()); } catch (Exception ex) {}
+				
+				Question question = null;
+				if (questionId != null) { 
+					for (Question questionTemp : axis.getQuestions()) {
+						if (questionTemp.getId().equals(questionId)) {
+							question = questionTemp;
+						}
+					}
+				}
+				
+				if (question == null) {
+					question = new Question();
+				}
+				
+				question.setText(questionDto.getText());
+				question.setType(QuestionType.valueOf(questionDto.getType()));
+				question.setWeight(questionDto.getWeight());
+				question = questionRepository.save(question);
+				
+				newQuestions.add(question);	
+			}
+			
+			axis.getQuestions().clear();
+			for (Question question : newQuestions) {
+				axis.getQuestions().add(question);
+			}
+			
+			newAxes.add(axis);	
+		}
+		
+		poll.getAxes().clear();
+		for (Axis axis : newAxes) {
 			poll.getAxes().add(axis);
 		}
 
@@ -210,6 +264,11 @@ public class OrganizationService extends BaseService {
 	@Transactional
 	public UUID getOrganizationIdFromPollId(UUID pollId) {
 		return pollRepository.getOrganizationIdFromPollId(pollId);
+	}
+	
+	@Transactional
+	public UUID getOrganizationIdFromMemberId(UUID memberId) {
+		return memberRepository.findById(memberId).getOrganization().getId();
 	}
 	
 	@Transactional
@@ -267,25 +326,26 @@ public class OrganizationService extends BaseService {
 		List<AxisResultDto> axesResultsDto = new ArrayList<AxisResultDto>();
 		
 		for (Axis axis : poll.getAxes()) {
-			AxisResultDto axisResults = new AxisResultDto(); 
-			axisResults.setAxisId(axis.getId().toString());
-			axisResults.setAxisTitle(axis.getTitle());
+			AxisResultDto axisResults = new AxisResultDto();
+			axisResults.setAxis(axis.toDto());
 			
-			for (QuestionAndWeight questionAndWeight : axis.getQuestionsAndWeights()) {
+			for (Question question : axis.getQuestions()) {
 				
 				QuestionResultDto questionResult = new QuestionResultDto();
-				questionResult.setQuestionId(questionAndWeight.getQuestion().getId().toString());
-				questionResult.setQuestionText(questionAndWeight.getQuestion().getText());
-				questionResult.setQuestionType(questionAndWeight.getQuestion().getType().toString());
+				questionResult.setQuestionId(question.getId().toString());
+				questionResult.setQuestionText(question.getText());
+				questionResult.setQuestionType(question.getType().toString());
 				
-				switch (questionAndWeight.getQuestion().getType()) {
+				switch (question.getType()) {
 				case TEXT:
-					questionResult.setAnswersTexts(answerBatchRepository.getQuestionTextAnswers(poll.getId(), questionAndWeight.getQuestion().getId()));
+					questionResult.setAnswersTexts(answerBatchRepository.getQuestionTextAnswers(poll.getId(), question.getId()));
 					break;
 					
 				case RATE_1_5:
-					questionResult.setWeight(questionAndWeight.getWeight());
-					questionResult.setAnswersRates(answerBatchRepository.getQuestionRates(poll.getId(), questionAndWeight.getQuestion().getId()));
+					questionResult.setWeight(question.getWeight());
+					questionResult.setAnswersRates(answerBatchRepository.getQuestionRates(poll.getId(), question.getId()));
+					break;
+				default:
 					break;
 				}
 				
@@ -304,7 +364,7 @@ public class OrganizationService extends BaseService {
 	}
 	
 	@Transactional
-	public PostResult answerPoll(UUID pollId, List<AnswerDto> answersDto, ResponderType responderType) {
+	public PostResult answerPoll(UUID pollId, List<AnswerDto> answersDto, String secret) {
 		
 		Poll poll = pollRepository.findById(pollId);
 		
@@ -314,7 +374,7 @@ public class OrganizationService extends BaseService {
 		
 		AnswerBatch batch = new AnswerBatch();
 		
-		batch.setResponderType(responderType);
+		batch.setSecret(secret);
 		batch.setPoll(poll);
 		batch = answerBatchRepository.save(batch);
 		
@@ -338,4 +398,115 @@ public class OrganizationService extends BaseService {
 		
 		return new PostResult("success", "poll answered", batch.getId().toString());
 	}
+	
+	@Transactional
+	public GetResult<List<MemberDto>> getMembersList(UUID orgId) {
+		Organization organization = organizationRepository.findById(orgId);
+		List<Member> members = organization.getMembers();
+		
+		List<MemberDto> membersDto = new ArrayList<MemberDto>();
+		for (Member member : members) {
+			membersDto.add(member.toDto());
+		}
+		
+		return new GetResult<List<MemberDto>>("success", "members retrieved", membersDto);
+	}
+	
+	@Transactional
+	public PostResult addMember(UUID orgId, MemberDto memberDto) {
+		Organization organization = organizationRepository.findById(orgId);
+		
+		Member existingMember = memberRepository.findByOrganizationIdAndEmail(orgId, memberDto.getEmail());
+		
+		if (existingMember != null) {
+			return new PostResult("error", "email already in organization", null);
+		}
+		
+		Member member = new Member();
+		
+		member.setOrganization(organization);
+		member.setEmail(memberDto.getEmail());
+		member = memberRepository.save(member);
+		
+		organization.getMembers().add(member);
+		organizationRepository.save(organization);
+		
+		return new PostResult("success", "member added", member.getId().toString());
+	}
+	
+	@Transactional
+	public PostResult deleteMember(UUID memberId) {
+		Member member = memberRepository.findById(memberId);
+		
+		if (member == null) {
+			return new PostResult("error", "member not found", null);
+		}
+		
+		/* delete credentials too */
+		List<PollCredential> credentials = pollCredentialRepository.findByMember_Id(member.getId());
+		for (PollCredential credential : credentials) {
+			pollCredentialRepository.delete(credential);
+		}
+		
+		memberRepository.delete(member);
+		return new PostResult("success", "member deleted", null);
+		
+	}
+	
+	@Transactional
+	public PostResult addAdmin(UUID orgId, String email) {
+		AppUser admin = appUserRepository.findByEmail(email);
+		
+		if (admin == null) {
+			return new PostResult("error", "user not found with that email", null);
+		}
+		
+		Organization organization = organizationRepository.findById(orgId);
+		organization.getAdmins().add(admin);
+		organizationRepository.save(organization);
+		
+		return new PostResult("success", "admin added", admin.getId().toString());
+	}
+	
+	@Transactional
+	public GetResult<List<AppUserDto>> getAdmins(UUID orgId) {
+		Organization organization = organizationRepository.findById(orgId);
+		List<AppUser> admins = organization.getAdmins();
+		List<AppUserDto> adminsDto = new ArrayList<AppUserDto>();
+		
+		for (AppUser admin : admins) {
+			adminsDto.add(admin.toDto());	
+		}
+		
+		return new GetResult<List<AppUserDto>>("success", "admins retrieved", adminsDto);
+	}
+	
+	@Transactional
+	public PostResult deleteAdmin(UUID orgId, UUID adminId) {
+		AppUser admin = appUserRepository.findById(adminId);
+		
+		Organization organization = organizationRepository.findById(orgId);
+		if (organization.getAdmins().size() == 1) {
+			return new PostResult("error", "cant delete all admins", null);
+		}
+		
+		organization.getAdmins().remove(admin);
+		organizationRepository.save(organization);
+		
+		return new PostResult("success", "admin removed", null);
+	}
+	
+	@Transactional
+	public Boolean checkSecret(UUID pollId, String secret) {
+		PollCredential credential = pollCredentialRepository.findBySecret(secret);
+		
+		if (credential == null) {
+			return false;	
+		}
+		
+		Boolean pollValid = credential.getPoll().getId().equals(pollId);
+		
+		return pollValid;
+	}
+	
 }

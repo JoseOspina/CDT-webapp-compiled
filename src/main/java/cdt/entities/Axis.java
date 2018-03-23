@@ -36,13 +36,15 @@ public class Axis {
 	
 	private String title;
 	
+	private Boolean includeInPlot;
+	
 	@Lob
 	@Type(type = "org.hibernate.type.TextType")
 	private String description;
 	
 	@ManyToMany
 	@OrderColumn(name = "questions_order")
-	private List<QuestionAndWeight> questionsAndWeights = new ArrayList<QuestionAndWeight>();
+	private List<Question> questions = new ArrayList<Question>();
 
 	
 	public AxisDto toDto() {
@@ -51,10 +53,10 @@ public class Axis {
 		dto.setId(id.toString());
 		dto.setTitle(title);
 		dto.setDescription(description);
-		dto.setCustom(false);
+		dto.setIncludeInPlot(includeInPlot);
 		
-		for (QuestionAndWeight questionAndWeight : questionsAndWeights) {
-			dto.getQuestions().add(questionAndWeight.getQuestion().toDto(questionAndWeight.getWeight()));
+		for (Question question : questions) {
+			dto.getQuestions().add(question.toDto());
 		}
 		
 		return dto;
@@ -83,6 +85,14 @@ public class Axis {
 	public void setTitle(String title) {
 		this.title = title;
 	}
+	
+	public Boolean getIncludeInPlot() {
+		return includeInPlot;
+	}
+
+	public void setIncludeInPlot(Boolean includeInPlot) {
+		this.includeInPlot = includeInPlot;
+	}
 
 	public String getDescription() {
 		return description;
@@ -92,12 +102,12 @@ public class Axis {
 		this.description = description;
 	}
 
-	public List<QuestionAndWeight> getQuestionsAndWeights() {
-		return questionsAndWeights;
+	public List<Question> getQuestions() {
+		return questions;
 	}
 
-	public void setQuestionsAndWeights(List<QuestionAndWeight> questionsAndWeights) {
-		this.questionsAndWeights = questionsAndWeights;
+	public void setQuestions(List<Question> questions) {
+		this.questions = questions;
 	}
 		
 }
