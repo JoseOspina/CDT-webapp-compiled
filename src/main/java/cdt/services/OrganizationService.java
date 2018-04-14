@@ -10,10 +10,10 @@ import javax.transaction.Transactional;
 import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.stereotype.Service;
 
+import cdt.dto.AnswerBatchDto;
 import cdt.dto.AnswerDto;
 import cdt.dto.AppUserDto;
 import cdt.dto.AxisDto;
-import cdt.dto.AxisResultDto;
 import cdt.dto.GetResult;
 import cdt.dto.MemberDto;
 import cdt.dto.OrganizationDto;
@@ -21,7 +21,6 @@ import cdt.dto.PollDetailsDto;
 import cdt.dto.PollDto;
 import cdt.dto.PostResult;
 import cdt.dto.QuestionDto;
-import cdt.dto.QuestionResultDto;
 import cdt.entities.Answer;
 import cdt.entities.AnswerBatch;
 import cdt.entities.AppUser;
@@ -312,52 +311,42 @@ public class OrganizationService extends BaseService {
 	public GetResult<PollDetailsDto> getPollDetails(UUID pollId) {
 		PollDetailsDto pollDetailsDto = new PollDetailsDto();
 		
-		pollDetailsDto.setNumberOfAnswers(answerBatchRepository.countNAnswers(pollId));
-		pollDetailsDto.setAxesResults(getAxesResults(pollId));
+		List<AnswerBatch> answerBatches = answerBatchRepository.findByPollId(pollId);
 		
-		return new GetResult<PollDetailsDto>("success", "organization retrieved", pollDetailsDto);
+		for (AnswerBatch batch : answerBatches) {
+			
+			AnswerBatchDto batchDto = new AnswerBatchDto();
+			
+			for (Answer answer : batch.getAnswers()) {
+				
+				Question question = answer.getQuestion();
+				AnswerDto answerDto = new AnswerDto();
+				
+				answerDto.setQuestionId(question.getId().toString());
+				
+				switch (question.getType()) {
+					case RATE_1_5:
+						answerDto.setRate(answer.getRate());
+						break;
+						
+					case TEXT:
+						answerDto.setText(answer.getText());
+						break;
+						
+					default:
+						break;
+				}
+				
+				batchDto.getAnswers().add(answerDto);
+			}
+			
+			pollDetailsDto.getAnswerBatches().add(batchDto);
+		}
+		
+		return new GetResult<PollDetailsDto>("success", "poll details retrieved", pollDetailsDto);
 	}
 	
 
-	@Transactional
-	public List<AxisResultDto> getAxesResults(UUID pollId) {
-		
-		Poll poll = pollRepository.findById(pollId);
-		List<AxisResultDto> axesResultsDto = new ArrayList<AxisResultDto>();
-		
-		for (Axis axis : poll.getAxes()) {
-			AxisResultDto axisResults = new AxisResultDto();
-			axisResults.setAxis(axis.toDto());
-			
-			for (Question question : axis.getQuestions()) {
-				
-				QuestionResultDto questionResult = new QuestionResultDto();
-				questionResult.setQuestionId(question.getId().toString());
-				questionResult.setQuestionText(question.getText());
-				questionResult.setQuestionType(question.getType().toString());
-				
-				switch (question.getType()) {
-				case TEXT:
-					questionResult.setAnswersTexts(answerBatchRepository.getQuestionTextAnswers(poll.getId(), question.getId()));
-					break;
-					
-				case RATE_1_5:
-					questionResult.setWeight(question.getWeight());
-					questionResult.setAnswersRates(answerBatchRepository.getQuestionRates(poll.getId(), question.getId()));
-					break;
-				default:
-					break;
-				}
-				
-				axisResults.getQuestionResults().add(questionResult);
-			}
-			
-			axesResultsDto.add(axisResults);
-		}
-		
-		return axesResultsDto;
-	}
-	
 	@Transactional
 	public PollAudience getPollAudience(UUID pollId) {
 		return pollRepository.findById(pollId).getConfig().getAudience();

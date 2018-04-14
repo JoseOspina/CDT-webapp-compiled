@@ -1,26 +1,18 @@
 package cdt.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PollDetailsDto {
 	
-	public Integer numberOfAnswers;
-	public List<AxisResultDto> axesResults;
+	public List<AnswerBatchDto> answerBatches = new ArrayList<AnswerBatchDto>();
 
-	public Integer getNumberOfAnswers() {
-		return numberOfAnswers;
+	public List<AnswerBatchDto> getAnswerBatches() {
+		return answerBatches;
 	}
 
-	public void setNumberOfAnswers(Integer numberOfAnswers) {
-		this.numberOfAnswers = numberOfAnswers;
+	public void setAnswerBatches(List<AnswerBatchDto> answerBatches) {
+		this.answerBatches = answerBatches;
 	}
-
-	public List<AxisResultDto> getAxesResults() {
-		return axesResults;
-	}
-
-	public void setAxesResults(List<AxisResultDto> axesResults) {
-		this.axesResults = axesResults;
-	}
-	
+		
 }
